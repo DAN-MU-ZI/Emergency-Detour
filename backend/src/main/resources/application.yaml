@@ -1,3 +1,5 @@
 spring:
   application:
     name: demo
+
+its-api-key: ${ITS_API_KEY:}
