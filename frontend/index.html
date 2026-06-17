@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>OpenLayers + VWorld</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css" />
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #header {
+            width: 100%;
+            height: 50px;
+            flex: 0 0 50px;
+        }
+
+        .btn {
+            width: 200px;
+            height: 50px;
+            background-color: #007bff;
+            color: white;
+            border: 0;
+            text-align: center;
+            line-height: 50px;
+            cursor: pointer;
+            user-select: none;
+            font: inherit;
+        }
+
+        #map {
+            width: 100%;
+            flex: 1;
+        }
+
+        #popup {
+            background: white;
+            padding: 15px;
+            min-width: 180px;
+            min-height: 180px;
+        }
+
+        #popup-closer {
+            text-decoration: none;
+            float: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header">
+        <button type="button" id="markerButton" class="btn">마커 가져오기</button>
+    </div>
+    <div id="map"></div>
+
+    <div id="popup" class="ol-popup">
+        <a href="#" id="popup-closer">❌</a>
+        <div id="popup-content"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
+
+    <script>
+        const VWORLD_API_KEY = 'api-key';
+
+        const vectorSource = new ol.source.Vector();
+        const vectorLayer = new ol.layer.Vector({
+            source: vectorSource
+        });
+
+        async function getMarkers() {
+            try {
+                const response = await fetch('http://localhost:8080/places?query=부산역');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                vectorSource.clear();
+
+                for (let result of data["results"] || []) {
+                    let markerPosition = ol.proj.fromLonLat([parseFloat(result["lng"]), parseFloat(result["lat"])]);
+                    let markerFeature = new ol.Feature({
+                        geometry: new ol.geom.Point(markerPosition),
+                        title: result["title"],
+                        address: result["address"]
+                    });
+
+                    vectorSource.addFeature(markerFeature);
+                }
+            } catch (error) {
+                console.error('Error fetching markers:', error);
+            }
+        }
+
+
+        const vworldBaseLayer = new ol.layer.Tile({
+            source: new ol.source.XYZ({
+                url: `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/Base/{z}/{y}/{x}.png`,
+                crossOrigin: 'anonymous'
+            })
+        });
+
+        const map = new ol.Map({
+            target: 'map',
+            layers: [
+                vworldBaseLayer
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([129.041741420313, 35.1136934764914]), // 부산역
+                zoom: 17
+            })
+        });
+
+        map.addLayer(vectorLayer);
+
+        const container = document.getElementById('popup');
+        const content = document.getElementById('popup-content');
+        const closer = document.getElementById('popup-closer');
+
+        const popupOverlay = new ol.Overlay({
+            element: container,
+        })
+
+        map.addOverlay(popupOverlay);
+
+        closer.addEventListener('click', function (event) {
+            event.preventDefault();
+            popupOverlay.setPosition(undefined);
+            closer.blur();
+        });
+
+        map.on('click', function (event) {
+            const feature = map.forEachFeatureAtPixel(event.pixel, function (feature) {
+                return feature;
+            });
+
+            if (feature) {
+                const title = feature.get('title');
+                const address = feature.get('address');
+                const coordinates = feature.getGeometry().getCoordinates();
+
+                popupOverlay.setPosition(coordinates);
+                document.getElementById('popup-content').innerHTML = `
+                <h3>${title}</h3>
+                <div>${address}</div>
+                `
+            }
+        });
+
+
+
+        document.getElementById('markerButton').addEventListener('click', getMarkers);
+    </script>
+</body>
+
+</html>
