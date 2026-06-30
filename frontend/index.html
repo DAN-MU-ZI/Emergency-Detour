@@ -100,16 +100,36 @@
             })
         });
 
+        const view = new ol.View({
+            center: ol.proj.fromLonLat([129.041741420313, 35.1136934764914]), // 부산역
+            zoom: 17
+        })
+
         const map = new ol.Map({
             target: 'map',
             layers: [
                 vworldBaseLayer
             ],
-            view: new ol.View({
-                center: ol.proj.fromLonLat([129.041741420313, 35.1136934764914]), // 부산역
-                zoom: 17
-            })
+            view: view
         });
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const acc = pos.coords.accuracy;
+
+                view.setCenter(ol.proj.fromLonLat([lon, lat]));
+                const markerPosition = ol.proj.fromLonLat([lon, lat]);
+                const markerFeature = createMarkerFeature({}, markerPosition);
+                vectorSource.addFeature(markerFeature);
+
+                console.log(lat, lon, acc);
+            },
+            (err) => {
+                console.error(err);
+            }
+        );
 
         map.addLayer(vectorLayer);
 
