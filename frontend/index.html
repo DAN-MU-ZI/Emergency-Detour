@@ -55,19 +55,33 @@
             text-decoration: none;
             float: right;
         }
+
+        #side-tab {
+            background-color: white;
+            width: 20%;
+            position: absolute;
+            height: 100%;
+        }
     </style>
 </head>
 
 <body>
-    <div id="header">
-        <button type="button" id="markerButton" class="btn">마커 가져오기</button>
-    </div>
     <div id="map"></div>
+
+    <div id="side-tab">
+        <div id="header">
+            <button type="button" id="markerButton" class="btn">마커 가져오기</button>
+        </div>
+        <ol id="search-result">
+        </ol>
+    </div>
 
     <div id="popup" class="ol-popup">
         <a href="#" id="popup-closer">❌</a>
         <div id="popup-content"></div>
     </div>
+
+
 
     <script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
 
@@ -90,7 +104,12 @@
 
                 vectorSource.clear();
 
+                let searchList = document.querySelector("#search-result");
+                let fragment = document.createDocumentFragment();
+
                 for (let result of data["results"] || []) {
+
+                    // ol에 마커 등록
                     let markerPosition = ol.proj.fromLonLat([parseFloat(result["lng"]), parseFloat(result["lat"])]);
                     let markerFeature = new ol.Feature({
                         geometry: new ol.geom.Point(markerPosition),
@@ -99,7 +118,13 @@
                     });
 
                     vectorSource.addFeature(markerFeature);
+
+                    // 검색 결과에 리스팅
+                    let li = document.createElement("li");
+                    li.textContent = `name:${result["title"]}, address:${result["address"]}`;
+                    fragment.appendChild(li);
                 }
+                searchList.replaceChildren(fragment);
             } catch (error) {
                 console.error('Error fetching markers:', error);
             }
