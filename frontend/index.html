@@ -122,6 +122,20 @@
                     // 검색 결과에 리스팅
                     const li = document.createElement("li");
                     li.textContent = `name:${result["title"]}, address:${result["address"]}`;
+
+                    li.addEventListener("click", function () {
+                        map.getView().animate({
+                            center: markerPosition,
+                            zoom: 18
+                        })
+
+                        popupOverlay.setPosition(markerPosition);
+                        content.innerHTML = `
+                        <h3>${result["title"]}</h3>
+                        <div>${result["address"]}</div>
+                        `;
+                    });
+
                     fragment.appendChild(li);
                 }
                 searchList.replaceChildren(fragment);
