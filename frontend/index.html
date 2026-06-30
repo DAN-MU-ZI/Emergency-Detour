@@ -93,58 +93,6 @@
             source: vectorSource
         });
 
-        async function getMarkers() {
-            try {
-                const response = await fetch('http://localhost:8080/places?query=부산역');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                vectorSource.clear();
-
-                const searchList = document.querySelector("#search-result");
-                const fragment = document.createDocumentFragment();
-
-                for (const result of data["results"] || []) {
-
-                    // ol에 마커 등록
-                    const markerPosition = ol.proj.fromLonLat([parseFloat(result["lng"]), parseFloat(result["lat"])]);
-                    const markerFeature = new ol.Feature({
-                        geometry: new ol.geom.Point(markerPosition),
-                        title: result["title"],
-                        address: result["address"]
-                    });
-
-                    vectorSource.addFeature(markerFeature);
-
-                    // 검색 결과에 리스팅
-                    const li = document.createElement("li");
-                    li.textContent = `name:${result["title"]}, address:${result["address"]}`;
-
-                    li.addEventListener("click", function () {
-                        map.getView().animate({
-                            center: markerPosition,
-                            zoom: 18
-                        })
-
-                        popupOverlay.setPosition(markerPosition);
-                        content.innerHTML = `
-                        <h3>${result["title"]}</h3>
-                        <div>${result["address"]}</div>
-                        `;
-                    });
-
-                    fragment.appendChild(li);
-                }
-                searchList.replaceChildren(fragment);
-            } catch (error) {
-                console.error('Error fetching markers:', error);
-            }
-        }
-
-
         const vworldBaseLayer = new ol.layer.Tile({
             source: new ol.source.XYZ({
                 url: `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/Base/{z}/{y}/{x}.png`,
@@ -171,9 +119,69 @@
 
         const popupOverlay = new ol.Overlay({
             element: container,
-        })
+        });
 
         map.addOverlay(popupOverlay);
+
+        function showPopup(coordinates, title, address) {
+            popupOverlay.setPosition(coordinates);
+            content.innerHTML = `
+                <h3>${title}</h3>
+                <div>${address}</div>
+            `;
+        }
+
+        function createMarkerFeature(result, markerPosition) {
+            return new ol.Feature({
+                geometry: new ol.geom.Point(markerPosition),
+                title: result["title"],
+                address: result["address"]
+            });
+        }
+
+        function createResultItem(result, markerPosition) {
+            const li = document.createElement("li");
+            li.textContent = `name:${result["title"]}, address:${result["address"]}`;
+
+            li.addEventListener("click", function () {
+                map.getView().animate({
+                    center: markerPosition,
+                    zoom: 18
+                });
+
+                showPopup(markerPosition, result["title"], result["address"]);
+            });
+
+            return li;
+        }
+
+        async function getMarkers() {
+            try {
+                const response = await fetch('http://localhost:8080/places?query=부산역');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                const searchList = document.querySelector("#search-result");
+                const fragment = document.createDocumentFragment();
+
+                vectorSource.clear();
+
+                for (const result of data["results"] || []) {
+                    const markerPosition = ol.proj.fromLonLat([parseFloat(result["lng"]), parseFloat(result["lat"])]);
+                    const markerFeature = createMarkerFeature(result, markerPosition);
+                    const resultItem = createResultItem(result, markerPosition);
+
+                    vectorSource.addFeature(markerFeature);
+                    fragment.appendChild(resultItem);
+                }
+
+                searchList.replaceChildren(fragment);
+            } catch (error) {
+                console.error('Error fetching markers:', error);
+            }
+        }
 
         closer.addEventListener('click', function (event) {
             event.preventDefault();
@@ -191,11 +199,7 @@
                 const address = feature.get('address');
                 const coordinates = feature.getGeometry().getCoordinates();
 
-                popupOverlay.setPosition(coordinates);
-                document.getElementById('popup-content').innerHTML = `
-                <h3>${title}</h3>
-                <div>${address}</div>
-                `
+                showPopup(coordinates, title, address);
             }
         });
 
