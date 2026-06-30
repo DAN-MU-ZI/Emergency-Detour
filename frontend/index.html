@@ -178,6 +178,11 @@
                 }
 
                 searchList.replaceChildren(fragment);
+
+                const firstResultItem = searchList.querySelector("li");
+                if (firstResultItem) {
+                    firstResultItem.click();
+                }
             } catch (error) {
                 console.error('Error fetching markers:', error);
             }
