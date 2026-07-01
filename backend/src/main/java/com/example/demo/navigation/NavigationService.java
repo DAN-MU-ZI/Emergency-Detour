@@ -37,6 +37,7 @@ public class NavigationService {
                         ObjectNode responseResultItemNode = om.createObjectNode();
                         responseResultItemNode.put("title", itemNode.get("title").asString());
                         responseResultItemNode.put("address", itemNode.get("address").get("parcel").asString());
+                        responseResultItemNode.put("id", itemNode.get("id").asString());
                         responseResultItemNode.put("lat", itemNode.get("point").get("y").asDouble());
                         responseResultItemNode.put("lng", itemNode.get("point").get("x").asDouble());
                         responseNode.withArray("results").add(responseResultItemNode);
