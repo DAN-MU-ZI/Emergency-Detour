@@ -20,7 +20,7 @@ public class NavigationService {
     private final ObjectMapper om;
 
     public ResponseEntity<?> searchPlaces(String location) throws Exception {
-        String vWorldResponse = vWorldApiUtils.search(location, "place", null);
+        String vWorldResponse = vWorldApiUtils.search(location, "address", "road");
         JsonNode parsedResponse = om.readTree(vWorldResponse);
 
         ObjectNode responseNode = (ObjectNode) om.createObjectNode();
@@ -46,7 +46,6 @@ public class NavigationService {
             }
         }
 
-        log.info("응답은 처리댐");
         return ResponseEntity.ok().body(responseNode);
     }
 }

@@ -70,6 +70,11 @@
 
     <div id="side-tab">
         <div id="header">
+            <input
+                type="text"
+                id="addressInput"
+                placeholder="주소를 입력하세요"
+            />
             <button type="button" id="markerButton" class="btn">마커 가져오기</button>
         </div>
         <ol id="search-result">
@@ -175,9 +180,9 @@
             return li;
         }
 
-        async function getMarkers() {
+        async function getMarkers(address) {
             try {
-                const response = await fetch('http://localhost:8080/places?query=부산역');
+                const response = await fetch(`http://localhost:8080/places?query=${encodeURIComponent(address)}`);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
@@ -229,8 +234,15 @@
         });
 
 
+        document.getElementById('markerButton').addEventListener('click', function(event) {
+            const address = document.getElementById('addressInput').value.trim();
 
-        document.getElementById('markerButton').addEventListener('click', getMarkers);
+            if (!address) {
+                return;
+            }
+
+            getMarkers(address);
+        });
     </script>
 </body>
 
