@@ -1,5 +1,9 @@
 package com.example.demo.navigation;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -47,5 +51,24 @@ public class NavigationService {
         }
 
         return ResponseEntity.ok().body(responseNode);
+    }
+
+    public ResponseEntity<?> getRoutes(RouteRequest request) {
+        return ResponseEntity.ok(Map.of(
+                "routes", List.of(Map.of(
+                        "routeId", UUID.randomUUID().toString(),
+                        "summary", Map.of(
+                                "distance", 0,
+                                "distanceLabel", "계산 전"
+                        ),
+                        "geometry", Map.of(
+                                "type", "LineString",
+                                "coordinates", List.of(
+                                        List.of(request.origin().lon(), request.origin().lat()),
+                                        List.of(request.destination().lon(), request.destination().lat())
+                                )
+                        )
+                ))
+        ));
     }
 }

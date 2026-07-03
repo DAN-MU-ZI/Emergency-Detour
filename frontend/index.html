@@ -20,7 +20,7 @@
             flex-direction: column;
         }
 
-        #header {
+        #btn {
             width: 100%;
             height: 50px;
             flex: 0 0 50px;
@@ -62,6 +62,11 @@
             position: absolute;
             height: 100%;
         }
+
+        #search-result li.selected {
+            background-color: #e7f1ff;
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -69,13 +74,16 @@
     <div id="map"></div>
 
     <div id="side-tab">
-        <div id="header">
+        <div>
             <input
                 type="text"
                 id="addressInput"
                 placeholder="주소를 입력하세요"
             />
             <button type="button" id="markerButton" class="btn">마커 가져오기</button>
+        </div>
+        <div id="btn">
+            <button type="button" id="routeButton" class="btn">경로 안내</button>
         </div>
         <ol id="search-result">
         </ol>
@@ -92,6 +100,9 @@
 
     <script>
         const VWORLD_API_KEY = 'api-key';
+
+        let currentLocation = null;
+        let selectedDestination = null;
 
         const vectorSource = new ol.source.Vector();
         const vectorLayer = new ol.layer.Vector({
@@ -123,6 +134,8 @@
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
                 const acc = pos.coords.accuracy;
+
+                currentLocation = { lat, lon, name: "현재 위치" };
 
                 view.setCenter(ol.proj.fromLonLat([lon, lat]));
                 const markerPosition = ol.proj.fromLonLat([lon, lat]);
@@ -169,12 +182,26 @@
             li.textContent = `name:${result["title"]}, address:${result["address"]}`;
 
             li.addEventListener("click", function () {
+                document
+                    .querySelectorAll("#search-result li.selected")
+                    .forEach((item) => item.classList.remove("selected"));
+
+                li.classList.add("selected");
+
                 map.getView().animate({
                     center: markerPosition,
                     zoom: 18
                 });
 
                 showPopup(markerPosition, result["title"], result["address"]);
+
+                selectedDestination = {
+                    lat: parseFloat(result["lat"]),
+                    lon: parseFloat(result["lng"]),
+                    name: result["title"],
+                    id: result["id"],
+                    address: result["address"]
+                };
             });
 
             return li;
@@ -242,6 +269,27 @@
             }
 
             getMarkers(address);
+        });
+
+        async function requestRoute() {
+            const response = await fetch("http://localhost:8080/routes", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    origin: currentLocation,
+                    destination: selectedDestination
+                })
+            });
+
+            const data = await response.json(); 
+        }
+
+        document.getElementById("routeButton").addEventListener("click", function () {
+            requestRoute().catch((error) => {
+                console.error("Error fetching route:", error);
+            });
         });
     </script>
 </body>
